@@ -70,6 +70,8 @@ class StudentSubjectsScoreAPIView(APIView):
         subjects_title = request.data.get("subject_title", None)
         score = request.data.get("score", None)
 
+        print("first_name" in request.data)
+
         def get_credit_for_subject(subject_id: str):
             for credit_entry in credits_mapping:
                 if credit_entry["subject_id"] == subject_id:
@@ -80,14 +82,13 @@ class StudentSubjectsScoreAPIView(APIView):
 
             return None
 
-        if not all([student_first_name, student_last_name, subjects_title, score]):
+        if None in [student_first_name, student_last_name, subjects_title, score]:
             return Response(
                 {"message": "Incomplete data payload"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            score = float(score)
             if score < 0 or score > 100:
                 return Response(
                     {"message": "Score must be between 0 and 100"},
