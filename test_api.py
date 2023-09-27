@@ -49,7 +49,7 @@ def test_school_structure():
 
 if __name__ == "__main__":
     test_create_student_score()
-    # test_get_student_score(1)
-    # test_personnel_details()
-    # test_school_hierarchy()
-    # test_school_structure()
+    test_get_student_score(1)
+    test_personnel_details()
+    test_school_hierarchy()
+    test_school_structure()
