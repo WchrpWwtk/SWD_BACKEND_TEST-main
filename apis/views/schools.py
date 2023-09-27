@@ -547,7 +547,47 @@ class SchoolHierarchyAPIView(APIView):
             },
         ]
 
+        schools = Schools.objects.all()
+
         your_result = []
+
+        for school in schools:
+            data = {"school": school.title}
+
+            classes = Classes.objects.filter(school=school)
+
+            for obj in classes:
+                teachers = Personnel.objects.filter(school_class=obj, personnel_type=0)
+
+                for teacher in teachers:
+                    class_data = {
+                        f"class {obj.class_order}": {
+                            f"Teacher {teacher.first_name} {teacher.last_name}": []
+                        }
+                    }
+
+                    heads = Personnel.objects.filter(school_class=obj, personnel_type=1)
+
+                    for head in heads:
+                        class_data[f"class {obj.class_order}"][
+                            f"Teacher {teacher.first_name} {teacher.last_name}"
+                        ].append(
+                            {"Head of the room": f"{head.first_name} {head.last_name}"}
+                        )
+
+                    students = Personnel.objects.filter(
+                        school_class=obj, personnel_type=2
+                    )
+
+                    for student in students:
+                        class_data[f"class {obj.class_order}"][
+                            f"Teacher {teacher.first_name} {teacher.last_name}"
+                        ].append(
+                            {"Student": f"{student.first_name} {student.last_name}"}
+                        )
+
+                    data.update(class_data)
+                your_result.append(data)
 
         return Response(your_result, status=status.HTTP_200_OK)
 
