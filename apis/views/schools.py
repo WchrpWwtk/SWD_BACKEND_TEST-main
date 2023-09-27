@@ -72,11 +72,9 @@ class StudentSubjectsScoreAPIView(APIView):
 
         def get_credit_for_subject(subject_id: str):
             for credit_entry in credits_mapping:
-                print(credit_entry["subject_id"], subject_id)
                 if credit_entry["subject_id"] == subject_id:
                     credit_id = credit_entry["credit_id"]
                     for credit_info in credits_context:
-                        print(credit_info["id"], credit_id)
                         if credit_info["id"] == credit_id:
                             return credit_info["credit"]
 
