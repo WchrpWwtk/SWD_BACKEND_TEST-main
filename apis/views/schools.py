@@ -103,7 +103,7 @@ class StudentSubjectsScoreAPIView(APIView):
 
         if not subject:
             return Response(
-                {"message": "Subject not found"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         student = Personnel.objects.get(
@@ -112,7 +112,7 @@ class StudentSubjectsScoreAPIView(APIView):
 
         if not student:
             return Response(
-                {"message": "Student not found"}, status=status.HTTP_400_BAD_REQUEST
+                {"message": "Student not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         student_score_entry = StudentSubjectsScore.objects.get(
@@ -128,7 +128,7 @@ class StudentSubjectsScoreAPIView(APIView):
             if credit is None:
                 return Response(
                     {"message": "Credit not found for the subject"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=status.HTTP_404_NOT_FOUND,
                 )
 
             StudentSubjectsScore.objects.create(
@@ -198,6 +198,13 @@ class StudentSubjectsScoreDetailsAPIView(APIView):
             ],
             "grade_point_average": "grade point average",
         }
+
+        student = Personnel.objects.get(id=student_id)
+
+        if not student:
+            return Response(
+                {"message": "Student not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         return Response(example_context_data, status=status.HTTP_200_OK)
 
