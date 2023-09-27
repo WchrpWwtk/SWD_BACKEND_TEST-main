@@ -291,11 +291,48 @@ class PersonnelDetailsAPIView(APIView):
             "60. school: Dorm Palace School, role: Student, class: 5,name: Sarah Murphy",
         ]
 
-        school_title = kwargs.get("school_title", None)
+        def role_int_to_string(role: int) -> str:
+            match role:
+                case 0:
+                    return "Teacher"
+                case 1:
+                    return "Head of the room"
+                case 2:
+                    return "Student"
+                case _:
+                    return "Unknown"
 
         your_result = []
 
-        return Response(your_result, status=status.HTTP_400_BAD_REQUEST)
+        school_title = kwargs.get("school_title", None)
+
+        school = Schools.objects.get(title=school_title)
+        classes = Classes.objects.filter(school=school.pk)
+        counter = 0
+        personnel_details = []
+
+        for item in classes:
+            personnels = Personnel.objects.filter(school_class=item.pk)
+
+            for personnel in personnels:
+                personnel_details.append(
+                    {
+                        "school": school.title,
+                        "role": personnel.personnel_type,
+                        "class": item.class_order,
+                        "name": f"{personnel.first_name} {personnel.last_name}",
+                    }
+                )
+
+        personnel_details.sort(key=lambda x: x["role"])
+
+        for personnel_detail in personnel_details:
+            counter += 1
+            your_result.append(
+                f"{counter}. school: {personnel_detail['school']}, role: {role_int_to_string(personnel_detail['role'])}, class: {personnel_detail['class']}, name: {personnel_detail['name']}"
+            )
+
+        return Response(your_result, status=status.HTTP_200_OK)
 
 
 class SchoolHierarchyAPIView(APIView):
@@ -690,5 +727,32 @@ class SchoolStructureAPIView(APIView):
         ]
 
         your_result = []
+
+        root_structures = SchoolStructure.objects.filter(parent=None).values(
+            "title", "id"
+        )
+
+        for root_structure in root_structures:
+            level_1 = {"title": root_structure["title"], "sub": []}
+
+            second_structures = SchoolStructure.objects.filter(
+                parent=root_structure["id"]
+            ).values("title", "id")
+
+            for second_structure in second_structures:
+                level_2 = {"title": second_structure["title"], "sub": []}
+
+                third_structures = SchoolStructure.objects.filter(
+                    parent=second_structure["id"]
+                ).values("title")
+
+                for third_structure in third_structures:
+                    level_3 = {"title": third_structure["title"]}
+
+                    level_2["sub"].append(level_3)
+
+                level_1["sub"].append(level_2)
+
+            your_result.append(level_1)
 
         return Response(your_result, status=status.HTTP_200_OK)
