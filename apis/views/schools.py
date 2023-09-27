@@ -199,14 +199,72 @@ class StudentSubjectsScoreDetailsAPIView(APIView):
             "grade_point_average": "grade point average",
         }
 
-        student = Personnel.objects.get(id=student_id)
+        def score_to_grade(score: int) -> str:
+            if score < 0 or score > 100:
+                return "Score out of range"
+            else:
+                return (
+                    "A"
+                    if score > 79 and score < 101
+                    else "B+"
+                    if score > 74 and score < 80
+                    else "B"
+                    if score > 69 and score < 75
+                    else "C+"
+                    if score > 64 and score < 70
+                    else "C"
+                    if score > 59 and score < 65
+                    else "D+"
+                    if score > 54 and score < 60
+                    else "D"
+                    if score > 49 and score < 55
+                    else "F"
+                )
 
-        if not student:
+        try:
+            student = Personnel.objects.get(id=student_id)
+
+            if student.personnel_type not in [1, 2]:
+                return Response(
+                    {"message": "This person in not student"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            result = {
+                "student": {
+                    "id": student.pk,
+                    "full_name": f"{student.first_name} {student.last_name}",
+                    "school": student.school_class.school.title,
+                },
+                "subject_detail": [],
+                "grade_point_average": 0,
+            }
+
+            subjects = StudentSubjectsScore.objects.filter(student=student.pk)
+            total_score = 0
+            total_credit = 0
+
+            for subject in subjects:
+                total_score += subject.score * subject.credit
+                total_credit += subject.credit
+
+                result["subject_detail"].append(
+                    {
+                        "subject": subject.subjects.title,
+                        "credit": subject.credit,
+                        "score": subject.score,
+                        "grade": score_to_grade(subject.score),
+                    },
+                )
+
+            result["grade_point_average"] = total_score / total_credit
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except:
             return Response(
                 {"message": "Student not found"}, status=status.HTTP_404_NOT_FOUND
             )
-
-        return Response(example_context_data, status=status.HTTP_200_OK)
 
 
 class PersonnelDetailsAPIView(APIView):
@@ -306,33 +364,38 @@ class PersonnelDetailsAPIView(APIView):
 
         school_title = kwargs.get("school_title", None)
 
-        school = Schools.objects.get(title=school_title)
-        classes = Classes.objects.filter(school=school.pk)
-        counter = 0
-        personnel_details = []
+        try:
+            school = Schools.objects.get(title=school_title)
+            classes = Classes.objects.filter(school=school.pk)
+            counter = 0
+            personnel_details = []
 
-        for item in classes:
-            personnels = Personnel.objects.filter(school_class=item.pk)
+            for item in classes:
+                personnels = Personnel.objects.filter(school_class=item.pk)
 
-            for personnel in personnels:
-                personnel_details.append(
-                    {
-                        "school": school.title,
-                        "role": personnel.personnel_type,
-                        "class": item.class_order,
-                        "name": f"{personnel.first_name} {personnel.last_name}",
-                    }
+                for personnel in personnels:
+                    personnel_details.append(
+                        {
+                            "school": school.title,
+                            "role": personnel.personnel_type,
+                            "class": item.class_order,
+                            "name": f"{personnel.first_name} {personnel.last_name}",
+                        }
+                    )
+
+            personnel_details.sort(key=lambda x: x["role"])
+
+            for personnel_detail in personnel_details:
+                counter += 1
+                your_result.append(
+                    f"{counter}. school: {personnel_detail['school']}, role: {role_int_to_string(personnel_detail['role'])}, class: {personnel_detail['class']}, name: {personnel_detail['name']}"
                 )
 
-        personnel_details.sort(key=lambda x: x["role"])
-
-        for personnel_detail in personnel_details:
-            counter += 1
-            your_result.append(
-                f"{counter}. school: {personnel_detail['school']}, role: {role_int_to_string(personnel_detail['role'])}, class: {personnel_detail['class']}, name: {personnel_detail['name']}"
+            return Response(your_result, status=status.HTTP_200_OK)
+        except:
+            return Response(
+                {"message": "School title not found"}, status=status.HTTP_404_NOT_FOUND
             )
-
-        return Response(your_result, status=status.HTTP_200_OK)
 
 
 class SchoolHierarchyAPIView(APIView):
